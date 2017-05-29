@@ -1,0 +1,7 @@
+/**
+ * Wrapper task
+ * @see http://www.gradle.org/docs/current/userguide/userguide_single.html#gradle_wrapper
+ */
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.7'
+}
