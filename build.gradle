@@ -5,3 +5,18 @@
 task wrapper(type: Wrapper) {
     gradleVersion = '1.7'
 }
+
+/**
+ * Changing the project layout
+ * @see http://www.gradle.org/docs/current/userguide/userguide_single.html#N11E14
+ */
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+        resources {
+            srcDir 'src/resources'
+        }
+    }
+}
