@@ -1,30 +1,40 @@
 hadoop 2.7.3 完全分布式的安装方式
+
 1、启动zookeeper集群。
+
 2、启动DataNode上的journal node
 ./sbin/hadoop-daemon.sh start journalnode
-3、格式化HDFS（namenode）若是第一次格式化
-./bin/hdfs namenode -format
-4、格式化ZK
-./bin/hdfs zkfc -formatZK
+	3、格式化HDFS（namenode）若是第一次格式化
+	./bin/hdfs namenode -format
+	4、格式化ZK
+	./bin/hdfs zkfc -formatZK
+	
 5、启动zkfc来监控NN状态(在hadoop1、02)
 ./sbin/hadoop-daemon.sh start zkfc
-6、启动HDFS（namenode节点任何一台即可）
-./sbin/start-dfs.sh
-如果上面是NameNode1节点启动的需要把数据同步到另外一台namenode上
-下面指令是在NameNode2上执行的：
-hdfs namenode -bootstrapStandby
-启动NameNode2上的namenode服务作为standy
-sbin/hadoop-daemon.sh start namenode
+	6、启动HDFS（namenode节点任何一台即可）
+	./sbin/start-dfs.sh
+	如果上面是NameNode1节点启动的需要把数据同步到另外一台namenode上
+	下面指令是在NameNode2上执行的：
+	hdfs namenode -bootstrapStandby
+	启动NameNode2上的namenode服务作为standy
+	sbin/hadoop-daemon.sh start namenode
+	
 7、启动YARN资源管理器
 hadoop1:  sbin/start-yarn.sh
 hadoop2:  sbin/yarn-daemon.sh start resourcemanager
+检查工作节点的NodeManager是否启动，如果没有启动请执行：
+sbin/yarn-daemon.sh start nodemanager
+检查工作节点的DataNode是否启动，若没启动力请执行:
+sbin/hadoop-daemon.sh start datanode
+
 8、浏览器查看
 active:
 http://bg1:50070
 standby:
 http://bg2:50070
+
 9、验证HDFS HA
-hdfs dfs -put /etc/profile /profile
+hdfs dfs -put web.txt /profile
 hdfs dfs -ls /
 然后再kill掉active的NameNode
 kill -9 <pid of NN>
@@ -32,12 +42,55 @@ kill -9 <pid of NN>
 hadoop dfs -ls /
 检查上传的文件是否依然存在，如果存在表示HA生效，否则为失败.
 sbin/hadoop-daemon.sh start namenode
+
 10、验证YARN
 在任意一台机器上运行一下hadoop提供的demo中的WordCount程序：
 hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /profile /out
+
 11、其他
 测试集群工作状态的一些指令
+
 bin/hdfs dfsadmin -report    查看hdfs的各节点状态信息
 bin/hdfs haadmin -getServiceState nn1        获取一个namenode节点的HA状态
 sbin/hadoop-daemon.sh start namenode  单独启动一个namenode进程
 ./hadoop-daemon.sh start zkfc   单独启动一个zkfc进程
+
+============================================================================
+动态新增节点
+============================================================================
+1、修改 master 的 etc/hadoop/slaves 文件，添加新增的节点 bg6(slave4)
+
+2、在新增节点中启动journalnode,执行:
+./sbin/hadoop-daemon.sh start journalnode
+
+3、在新增节点中启动 datanode,执行:
+./sbin/hadoop-daemon.sh start datanode
+
+4、在新增节点中启动 nodemanager,执行:
+./sbin/yarn-daemon.sh start nodemanager
+
+
+============================================================================
+动态删除节点
+============================================================================
+1、在NameNode（Ative）节点中配置启用动态删除节点，在etc/hadoop/ 目录下添加 excludes 文件，配置需要输出的节点,如bg6(slave4)
+2、在NameNode（Ative）节点中修改 etc/hadoop/ hdfs-site.xml:
+<property>
+        <name>dfs.hosts.exclude</name>
+        <value>/home/hadoop-2.7.3/etc/hadoop/excludes</value>
+</property>
+3、在NameNode（Ative）节点中修改 mapred-site.xml:
+<property>
+        <name>mapred.hosts.exclude</name>
+        <value>/home/hadoop-2.7.3/etc/hadoop/excludes</value>
+        <final>true</final>
+</property>
+4、在namenode（Ative）节点上修改这些配置文件，在NameNode节点中执行命令命令:
+./bin/hadoop dfsadmin -refreshNodes
+5、执行 hadoop dfsadmin -report 或 web界面查看bg6(slave4)节点状态变由 Normal -> decomissioning -> Decommissioned。
+6、在 bg6(slave4)节点上关闭 datanode、journalnode 和 nodemanager 进程，运行:
+./sbin/hadoop-daemon.sh stop datanode
+./sbin/yarn-daemon.sh stop nodemanager
+./sbin/hadoop-daemon.sh start journalnode
+7、通过执行./bin/hadoop dfsadmin -report或 web界面查看节点状态被移除的节点是否被移除。
+8、运行./sbin/start-balancer.sh 均衡block
