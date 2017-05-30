@@ -1,0 +1,43 @@
+hadoop 2.7.3 完全分布式的安装方式
+1、启动zookeeper集群。
+2、启动DataNode上的journal node
+./sbin/hadoop-daemon.sh start journalnode
+3、格式化HDFS（namenode）若是第一次格式化
+./bin/hdfs namenode -format
+4、格式化ZK
+./bin/hdfs zkfc -formatZK
+5、启动zkfc来监控NN状态(在hadoop1、02)
+./sbin/hadoop-daemon.sh start zkfc
+6、启动HDFS（namenode节点任何一台即可）
+./sbin/start-dfs.sh
+如果上面是NameNode1节点启动的需要把数据同步到另外一台namenode上
+下面指令是在NameNode2上执行的：
+hdfs namenode -bootstrapStandby
+启动NameNode2上的namenode服务作为standy
+sbin/hadoop-daemon.sh start namenode
+7、启动YARN资源管理器
+hadoop1:  sbin/start-yarn.sh
+hadoop2:  sbin/yarn-daemon.sh start resourcemanager
+8、浏览器查看
+active:
+http://bg1:50070
+standby:
+http://bg2:50070
+9、验证HDFS HA
+hdfs dfs -put /etc/profile /profile
+hdfs dfs -ls /
+然后再kill掉active的NameNode
+kill -9 <pid of NN>
+检查另外一台NameNode是否变成了active状态
+hadoop dfs -ls /
+检查上传的文件是否依然存在，如果存在表示HA生效，否则为失败.
+sbin/hadoop-daemon.sh start namenode
+10、验证YARN
+在任意一台机器上运行一下hadoop提供的demo中的WordCount程序：
+hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /profile /out
+11、其他
+测试集群工作状态的一些指令
+bin/hdfs dfsadmin -report    查看hdfs的各节点状态信息
+bin/hdfs haadmin -getServiceState nn1        获取一个namenode节点的HA状态
+sbin/hadoop-daemon.sh start namenode  单独启动一个namenode进程
+./hadoop-daemon.sh start zkfc   单独启动一个zkfc进程
