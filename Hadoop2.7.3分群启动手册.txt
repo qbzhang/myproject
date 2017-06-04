@@ -22,6 +22,14 @@ hadoop 2.7.3 完全分布式的安装方式
 7、启动YARN资源管理器
 hadoop1:  sbin/start-yarn.sh
 hadoop2:  sbin/yarn-daemon.sh start resourcemanager
+检查resourcemanager集群状态是否正确
+yarn rmadmin -getServiceState rm1
+yarn rmadmin -getServiceState rm2
+浏览器查看resourcemanager
+active:
+http://bg1:8088
+standby:
+http://bg2:8088
 检查工作节点的NodeManager是否启动，如果没有启动请执行：
 sbin/yarn-daemon.sh start nodemanager
 检查工作节点的DataNode是否启动，若没启动力请执行:
@@ -34,7 +42,7 @@ standby:
 http://bg2:50070
 
 9、验证HDFS HA
-hdfs dfs -put web.txt /profile
+hdfs dfs -put web.txt /input
 hdfs dfs -ls /
 然后再kill掉active的NameNode
 kill -9 <pid of NN>
@@ -45,7 +53,7 @@ sbin/hadoop-daemon.sh start namenode
 
 10、验证YARN
 在任意一台机器上运行一下hadoop提供的demo中的WordCount程序：
-hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /profile /out
+hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /input /out
 
 11、其他
 测试集群工作状态的一些指令
