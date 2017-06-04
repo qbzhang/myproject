@@ -42,7 +42,8 @@ standby:
 http://bg2:50070
 
 9、验证HDFS HA
-hdfs dfs -put web.txt /input
+hdfs dfs -mkdir /input/
+hdfs dfs -put web.txt /input/
 hdfs dfs -ls /
 然后再kill掉active的NameNode
 kill -9 <pid of NN>
